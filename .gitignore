@@ -99,3 +99,5 @@ ENV/
 
 # mypy
 .mypy_cache/
+security_account
+security_password

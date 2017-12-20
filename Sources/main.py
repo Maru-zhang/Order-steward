@@ -7,6 +7,8 @@ import random
 import json
 import sys
 import smtplib
+import logging
+from logging import Logger, NOTSET
 from email.mime.text import MIMEText
 from email.header import Header
 from smtplib import SMTP_SSL
@@ -20,6 +22,8 @@ NULL_Flag = 'none'
 
 config_path = os.getenv("HOME") + "/.config/SCCOrderStrategy.json"
 
+logger = logging.Logger(name='order-logger', level=NOTSET)
+
 class Steward(object):
 
     def __init__(self):
@@ -27,16 +31,21 @@ class Steward(object):
         self.email = ''
         self.source = 'dingding'
         self.version = '2.4.4'
-        self._smtp_server = ''
+        self.smtp_server = 'smtp.163.com'
+        self.smtp_client = None
         self._name = '订餐小助手'
-        self._master_email = ''
-        self._master_email_pwd = ''
-        self.black_list = []
+        self._master_email = None
+        self._master_email_pwd = None
+        self.black_list = None
         try:
-            self.email_server = smtplib.SMTP('smtp.exmail.qq.com', 25)
-            self.email_server.login(self._master_email, self._master_email_pwd)
-        except:
-            pass
+            with open(os.getcwd() + '/security_account') as file:
+                self._master_email = file.read()
+            with open(os.getcwd() + '/security_password') as file:
+                self._master_email_pwd = file.read()
+            print(self._master_email)
+            print(self._master_email_pwd)
+        except Exception as e:
+            print(e)
 
     def run(self):
         try:
@@ -56,8 +65,6 @@ class Steward(object):
                 self.excutePeerJob()
         except KeyError:
             print('Nothing to excute ...')
-        finally:
-            self.email_server.quit()
     
     def run_test(self):
         self.excutePeerJob()
@@ -70,10 +77,14 @@ class Steward(object):
             print(filter_shop_list)
             shop = random.choice(filter_shop_list)
             shop_id = shop['memberId']
-            print('选择的店铺id为' + shop_id)
+            print('选择的店铺为' + str(shop_id))
+            logger.info(shop)
             shop_menu_json = self._fetch_shop_menu(shop_id)
+            shop_name = shop_menu_json['data']['list'][0]['mname']
             shop_menu = shop_menu_json['data']['list'][0]['list']
             meal_json = random.choice(shop_menu)
+            meal_name = meal_json['title']
+            meal_price = meal_json['price']
             meal_id = meal_json['id']
             print('选择的菜品id为' + meal_id)
             self._is_place_order(meal_id)
@@ -81,13 +92,24 @@ class Steward(object):
             print('地址id为' + address_id)
             self._save_order(meal_id, address_id)
             print('订单完成')
-            message = str(meal_json)
-            msg = MIMEText(message, "plain", 'utf-8')
-            msg["Subject"] = Header('今天的工作餐', 'utf-8')
-            msg["From"] = self._name
-            self.email_server.sendmail(self._master_email, [self.email], msg.as_string())
+            message = '''今天为您预定的是 %s 的 %s
+该菜品的价格为: %s人民币
+享受今天的工作餐吧~
+            ''' % (shop_name, meal_name, meal_price)
+            self.send_email(subject='今天的工作餐', to_account=self.email, content=message)
         except Exception as e:
-            pass
+            logger.error(e)
+
+    def send_email(self, to_account, subject, content):
+        email_client = smtplib.SMTP(self.smtp_server)
+        email_client.login(self._master_email, self._master_email_pwd)
+        # create msg
+        msg = MIMEText(content, 'plain', 'utf-8')
+        msg['Subject'] = Header(subject, 'utf-8')  # subject
+        msg['From'] = self._name
+        msg['To'] = to_account
+        email_client.sendmail(self._master_email, to_account, msg.as_string())
+        email_client.quit()
 
     def _fetch_today_shop(self):
         req = requests.post(self._cjd_url_today_shop, data=self._cjd_post_params, verify=False)
