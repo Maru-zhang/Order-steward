@@ -90,7 +90,7 @@ class Steward(object):
             self._is_place_order(meal_id)
             address_id = self._confirm_order(meal_id)['data']['address'][0]['id']
             print('地址id为' + address_id)
-            # self._save_order(meal_id, address_id)
+            self._save_order(meal_id, address_id)
             print('订单完成')
             message = '''今天为您预定的是 %s 的 %s
 该菜品的价格为: %s人民币
