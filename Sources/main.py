@@ -194,10 +194,13 @@ if __name__ == '__main__':
                 origin_user = {}
                 token = args[2]
                 black = args[3]
+                email = args[4]
                 if token != NULL_Flag:
                     origin_user['token'] = token
                 if black != NULL_Flag:
                     origin_user['black'] = black
+                if email != NULL_Flag
+                    origin_user['email'] = email
             origin_data[user_id] = origin_user
             file.write(json.dumps(origin_data))
     except Exception as e:
