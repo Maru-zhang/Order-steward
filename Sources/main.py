@@ -27,7 +27,7 @@ logger = logging.Logger(name='order-logger', level=NOTSET)
 class Steward(object):
 
     def __init__(self):
-        self.token = 'a992317e7290c8d15b132013776bc03f'
+        self.token = None
         self.email = ''
         self.source = 'dingding'
         self.version = '2.4.4'
